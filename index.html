@@ -1,0 +1,379 @@
+<!doctype html>
+<link rel="stylesheet" href="style2.css">
+<script src="https://code.jquery.com/jquery-3.2.1.min.js"  crossorigin="anonymous"></script>
+<script src="/socket.io/socket.io.js"></script>
+
+<link href="https://fonts.googleapis.com/css?family=Comfortaa" rel="stylesheet">
+
+<div class="container" id="container">
+    <div id="header">
+        <h1>FOUReANDa</h1>
+    </div>
+    <div id = "grid">
+        
+    </div>
+
+    <div id = "instrumentMenu">
+        <div id="instsHeader">
+            <h2>Instruments:</h2>
+        </div>
+        <div id="instBtn1" class="instBtns"></div>
+        <div id="instBtn2" class="instBtns"></div>
+        <div id="instBtn3" class="instBtns"></div>
+        <div id="instBtn4" class="instBtns"></div>
+        <div id="instrumentMenuDiv">
+            <p>Wave Shape:</p>
+            <img id="sineBtn" src="images/sinewave.png">
+            <img id="pulseBtn" src="images/pulsewave.png">
+            <img id="sawBtn" src="images/sawwave.png">
+            <br>
+
+            <p>Attack:</p>
+            <input id="attackSlider" type="range"/>
+            <p>Decay:</p>
+            <input id="decaySlider" type="range"/>
+            <p>Sustain:</p>
+            <input id="sustainSlider" type="range"/>
+            <p>Release:</p>
+            <input id="releaseSlider" type="range"/>
+            <p>Modulation Frequency:</p>
+            <input id="modFreqSlider" type="range"/>
+            <p>Modulation Amplitude:</p>
+            <input id="modAmpSlider" type="range"/>
+        </div>
+    </div>  
+    
+    <div id="globalMenu">
+
+    </div>  
+</div>
+<script>
+    var socket = io()
+    var instBtn1, instBtn2, instBtn3, instBtn4;
+
+    var selectedInst = 0;
+    var instColor1 = "rgb(178,54,98)"
+    var instColor2 = "rgb(54,168,127)"
+    var instColor3 = "rgb(206,124,41)"
+    var instColor4 = "rgb(134,63,196)"
+
+    var squaresArray = [];
+    var instrumentsArray = [];
+
+    var container = document.getElementById("container");
+    var grid = document.getElementById("grid");
+
+    var instrumentMenuDiv = document.getElementById("instrumentMenuDiv");
+    
+    instBtn1 = document.getElementById("instBtn1");
+    instBtn2 = document.getElementById("instBtn2");
+    instBtn3 = document.getElementById("instBtn3");
+    instBtn4 = document.getElementById("instBtn4");
+
+    var sineBtn = document.getElementById("sineBtn");
+    var pulseBtn = document.getElementById("pulseBtn");
+    var sawBtn = document.getElementById("sawBtn");
+    var attackSlider = document.getElementById("attackSlider");
+    var decaySlider = document.getElementById("decaySlider");
+    var sustainSlider = document.getElementById("sustainSlider");
+    var releaseSlider = document.getElementById("releaseSlider");
+    var modFreqSlider = document.getElementById("modFreqSlider");
+    var modAmpSlider = document.getElementById("modAmpSlider");
+
+    var inst1WaveType, inst2WaveType, inst3WaveType, inst4WaveType;
+    var inst1Attack, inst2Attack, inst3Attack, inst4Attack;
+    var inst1Decay, inst2Decay, inst3Decay, inst4Decay;
+    var inst1Release, inst2Release, inst3Release, inst4Release;
+    var inst1ModFreq, inst2ModFreq, inst3ModFreq, inst4ModFreq;
+    var inst1ModAmp, inst2ModAmp, inst3ModAmp, inst4ModAmp;
+   
+
+    $(() => {
+        for(i=0; i < 256; i++){
+            var eachSquare = document.createElement("div");
+            eachSquare.className = "allSquares"
+            eachSquare.setAttribute('index', i);
+
+            var innerSquare1 = document.createElement("div");
+            innerSquare1.className = "innerSquare1";
+            var innerSquare2 = document.createElement("div");
+            innerSquare2.className = "innerSquare2";
+            var innerSquare3 = document.createElement("div");
+            innerSquare3.className = "innerSquare3";
+            var innerSquare4 = document.createElement("div");
+            innerSquare4.className = "innerSquare4";
+
+            eachSquare.appendChild(innerSquare1);
+            eachSquare.appendChild(innerSquare2);
+            eachSquare.appendChild(innerSquare3);
+            eachSquare.appendChild(innerSquare4);
+
+            squaresArray.push(eachSquare); 
+            grid.appendChild(eachSquare);
+
+
+//EVENT LISTENERS
+            eachSquare.onclick = function(){
+                var numInstsVar = this.getAttribute('numInsts').valueOf();
+                switch(selectedInst){
+                    case 0:
+                        if(this.getAttribute('inst1OnOff') === 'off'){
+                            this.setAttribute('inst1OnOff', 'on');
+                            numInstsVar++;
+                        } else{
+                            this.setAttribute('inst1OnOff', 'off');
+                            numInstsVar--;
+                        }
+                        break;
+                    case 1:
+                        if(this.getAttribute('inst2OnOff') === 'off'){
+                            this.setAttribute('inst2OnOff', 'on');
+                            numInstsVar++;
+                        } else{
+                            this.setAttribute('inst2OnOff', 'off');
+                            numInstsVar--;
+                        }
+                        break;
+                    case 2:
+                        if(this.getAttribute('inst3OnOff') === 'off'){
+                            this.setAttribute('inst3OnOff', 'on');
+                            numInstsVar++;
+                        } else{
+                            this.setAttribute('inst3OnOff', 'off');
+                            numInstsVar--;
+                        }
+                        break;
+                    case 3:
+                        if(this.getAttribute('inst4OnOff') === 'off'){
+                            this.setAttribute('inst4OnOff', 'on');
+                            numInstsVar++;
+                        } else{
+                            this.setAttribute('inst4OnOff', 'off');
+                            numInstsVar--;
+                        }
+                        break;
+                }
+
+                this.setAttribute('numInsts', numInstsVar);
+
+                var squareVals = { index: this.getAttribute('index').valueOf(), inst1OnOff: this.getAttribute('inst1OnOff'), 
+                    inst2OnOff: this.getAttribute('inst2OnOff'), inst3OnOff: this.getAttribute('inst3OnOff'), 
+                    inst4OnOff: this.getAttribute('inst4OnOff'), numInsts: this.getAttribute('numInsts')};
+
+                putSquareVals(squareVals, this.getAttribute('index')); 
+            }
+        }
+
+        instBtn1.onclick = function(){
+            selectedInst = 0;
+            instrumentMenuDiv.style.backgroundColor = instColor1;
+            
+            attackSlider.value = instrumentsArray[selectedInst].attack;
+            decaySlider.value = instrumentsArray[selectedInst].decay;
+            sustainSlider.value = instrumentsArray[selectedInst].sustain;
+            releaseSlider.value = instrumentsArray[selectedInst].release;
+            modFreqSlider.value = instrumentsArray[selectedInst].modFreq;
+            modAmpSlider.value = instrumentsArray[selectedInst].modAmp;
+        }
+
+        instBtn2.onclick = function(){
+            selectedInst = 1;
+            instrumentMenuDiv.style.backgroundColor = instColor2;
+            
+            attackSlider.value = instrumentsArray[selectedInst].attack;
+            decaySlider.value = instrumentsArray[selectedInst].decay;
+            sustainSlider.value = instrumentsArray[selectedInst].sustain;
+            releaseSlider.value = instrumentsArray[selectedInst].release;
+            modFreqSlider.value = instrumentsArray[selectedInst].modFreq;
+            modAmpSlider.value = instrumentsArray[selectedInst].modAmp;
+        }
+
+        instBtn3.onclick = function(){
+            selectedInst = 2;
+            instrumentMenuDiv.style.backgroundColor = instColor3;
+            
+            attackSlider.value = instrumentsArray[selectedInst].attack;
+            decaySlider.value = instrumentsArray[selectedInst].decay;
+            sustainSlider.value = instrumentsArray[selectedInst].sustain;
+            releaseSlider.value = instrumentsArray[selectedInst].release;
+            modFreqSlider.value = instrumentsArray[selectedInst].modFreq;
+            modAmpSlider.value = instrumentsArray[selectedInst].modAmp;
+        }
+
+        instBtn4.onclick = function(){
+            selectedInst = 3;
+            instrumentMenuDiv.style.backgroundColor = instColor4;
+            
+            attackSlider.value = instrumentsArray[selectedInst].attack;
+            decaySlider.value = instrumentsArray[selectedInst].decay;
+            sustainSlider.value = instrumentsArray[selectedInst].sustain;
+            releaseSlider.value = instrumentsArray[selectedInst].release;
+            modFreqSlider.value = instrumentsArray[selectedInst].modFreq;
+            modAmpSlider.value = instrumentsArray[selectedInst].modAmp;
+        }
+
+        for(i = 0; i < 4; i++){
+            instrumentsArray.push({instIndex: i}); 
+        }
+
+
+        sineBtn.onclick = function(){
+            var instrumentVals = {instIndex: selectedInst, waveType: 'sine', attack: instrumentsArray[selectedInst].attack, decay: instrumentsArray[selectedInst].decay, 
+                sustain: instrumentsArray[selectedInst].sustain, release: instrumentsArray[selectedInst].release, modFreq: instrumentsArray[selectedInst].modFreq, modAmp: instrumentsArray[selectedInst].modAmp};
+            putInstrumentVals(instrumentVals);
+        }
+        pulseBtn.onclick = function(){
+            var instrumentVals = {instIndex: selectedInst, waveType: 'pulse', attack: instrumentsArray[selectedInst].attack, decay: instrumentsArray[selectedInst].decay, 
+                sustain: instrumentsArray[selectedInst].sustain, release: instrumentsArray[selectedInst].release, modFreq: instrumentsArray[selectedInst].modFreq, modAmp: instrumentsArray[selectedInst].modAmp};
+            putInstrumentVals(instrumentVals);
+        }
+        sawBtn.onclick = function(){
+            var instrumentVals = {instIndex: selectedInst, waveType: 'saw', attack: instrumentsArray[selectedInst].attack, decay: instrumentsArray[selectedInst].decay, 
+                sustain: instrumentsArray[selectedInst].sustain, release: instrumentsArray[selectedInst].release, modFreq: instrumentsArray[selectedInst].modFreq, modAmp: instrumentsArray[selectedInst].modAmp};
+            putInstrumentVals(instrumentVals);
+        }
+        attackSlider.oninput = function(){
+            var instrumentVals = {instIndex: selectedInst, waveType: instrumentsArray[selectedInst].waveType, attack: attackSlider.value, decay: instrumentsArray[selectedInst].decay, 
+                sustain: instrumentsArray[selectedInst].sustain, release: instrumentsArray[selectedInst].release, modFreq: instrumentsArray[selectedInst].modFreq, modAmp: instrumentsArray[selectedInst].modAmp};
+            putInstrumentVals(instrumentVals);
+        }
+        decaySlider.oninput = function(){
+            var instrumentVals = {instIndex: selectedInst, waveType: instrumentsArray[selectedInst].waveType, attack: instrumentsArray[selectedInst].attack, decay: decaySlider.value, 
+                sustain: instrumentsArray[selectedInst].sustain, release: instrumentsArray[selectedInst].release, modFreq: instrumentsArray[selectedInst].modFreq, modAmp: instrumentsArray[selectedInst].modAmp};
+            putInstrumentVals(instrumentVals);
+        }
+        sustainSlider.oninput = function(){
+            var instrumentVals = {instIndex: selectedInst, waveType: instrumentsArray[selectedInst].waveType, attack: instrumentsArray[selectedInst].attack, decay: instrumentsArray[selectedInst].decay, 
+                sustain: sustainSlider.value, release: instrumentsArray[selectedInst].release, modFreq: instrumentsArray[selectedInst].modFreq, modAmp: instrumentsArray[selectedInst].modAmp};
+            putInstrumentVals(instrumentVals);
+        }
+        releaseSlider.oninput = function(){
+            var instrumentVals = {instIndex: selectedInst, waveType: instrumentsArray[selectedInst].waveType, attack: instrumentsArray[selectedInst].attack, decay: instrumentsArray[selectedInst].decay, 
+                sustain: instrumentsArray[selectedInst].sustain, release: releaseSlider.value, modFreq: instrumentsArray[selectedInst].modFreq, modAmp: instrumentsArray[selectedInst].modAmp};
+            putInstrumentVals(instrumentVals);
+        }
+        modFreqSlider.oninput = function(){
+            var instrumentVals = {instIndex: selectedInst, waveType: instrumentsArray[selectedInst].waveType, attack: instrumentsArray[selectedInst].attack, decay: instrumentsArray[selectedInst].decay, 
+                sustain: instrumentsArray[selectedInst].sustain, release: instrumentsArray[selectedInst].release, modFreq: modFreqSlider.value, modAmp: instrumentsArray[selectedInst].modAmp};
+            putInstrumentVals(instrumentVals);
+        }
+        modAmpSlider.oninput = function(){
+            var instrumentVals = {instIndex: selectedInst, waveType: instrumentsArray[selectedInst].waveType, attack: instrumentsArray[selectedInst].attack, decay: instrumentsArray[selectedInst].decay, 
+                sustain: instrumentsArray[selectedInst].sustain, release: instrumentsArray[selectedInst].release, modFreq: instrumentsArray[selectedInst].modFreq, modAmp: modAmpSlider.value};
+            putInstrumentVals(instrumentVals);
+        }
+         
+        
+
+        getSquareVals();
+        getInstrumentVals();
+    })
+
+    socket.on('square', updateSquares);
+    socket.on('instrument', updateInstruments);
+
+    function getSquareVals() {
+        //get the data (from /squares) for each entry in /squares...trigger the updateSquare function
+        $.get('/squares', (data) =>{
+            data.forEach(updateSquares);
+        })
+    }
+
+    function getInstrumentVals() {
+        //get the data (from /instruments) for each entry in /instruments...trigger the updateInstrument function
+        $.get('/instruments', (data) =>{
+            data.forEach(updateInstruments);
+        })
+    }
+
+    function updateSquares(eachSquare){
+        var index = eachSquare.index;
+        var innerSquare1 = squaresArray[index].getElementsByClassName("innerSquare1")[0];
+        var innerSquare2 = squaresArray[index].getElementsByClassName("innerSquare2")[0];
+        var innerSquare3 = squaresArray[index].getElementsByClassName("innerSquare3")[0];
+        var innerSquare4 = squaresArray[index].getElementsByClassName("innerSquare4")[0];
+
+        squaresArray[index].setAttribute('inst1OnOff', eachSquare.inst1OnOff);
+        squaresArray[index].setAttribute('inst2OnOff', eachSquare.inst2OnOff);
+        squaresArray[index].setAttribute('inst3OnOff', eachSquare.inst3OnOff);
+        squaresArray[index].setAttribute('inst4OnOff', eachSquare.inst4OnOff);
+        squaresArray[index].setAttribute('numInsts', eachSquare.numInsts);
+
+        if(eachSquare.numInsts > 0){
+            if(eachSquare.inst1OnOff === 'on'){
+                innerSquare1.style.height = 100/eachSquare.numInsts +"%";
+            }else{
+                innerSquare1.style.height = 0;
+            }
+            if(eachSquare.inst2OnOff === 'on'){
+                innerSquare2.style.height = 100/eachSquare.numInsts +"%";
+            }else{
+                innerSquare2.style.height = 0;
+            }
+            if(eachSquare.inst3OnOff === 'on'){
+                innerSquare3.style.height = 100/eachSquare.numInsts +"%";
+            }else{
+                innerSquare3.style.height = 0;
+            }
+            if(eachSquare.inst4OnOff === 'on'){
+                innerSquare4.style.height = 100/eachSquare.numInsts +"%";
+            }else{
+                innerSquare4.style.height = 0;
+            } 
+        }else{
+            squaresArray[index].style.backgroundColor = 'rgb(225,225,225)';
+            innerSquare1.style.height = 0;
+            innerSquare2.style.height = 0;
+            innerSquare3.style.height = 0;
+            innerSquare4.style.height = 0;
+        }
+    }
+
+    function updateInstruments(eachInstrument){
+        //update the values of the sliders here
+        var instIndex = eachInstrument.instIndex;
+        instrumentsArray[instIndex].waveType = eachInstrument.waveType;
+        instrumentsArray[instIndex].attack = eachInstrument.attack;
+        instrumentsArray[instIndex].decay = eachInstrument.decay;
+        instrumentsArray[instIndex].sustain = eachInstrument.sustain;
+        instrumentsArray[instIndex].release = eachInstrument.release;
+        instrumentsArray[instIndex].modFreq = eachInstrument.modFreq;
+        instrumentsArray[instIndex].modAmp = eachInstrument.modAmp;
+
+        if(selectedInst == instIndex){
+            attackSlider.value = eachInstrument.attack;
+            decaySlider.value = eachInstrument.decay;
+            sustainSlider.value = eachInstrument.sustain;
+            releaseSlider.value = eachInstrument.release;
+            modFreqSlider.value = eachInstrument.modFreq;
+            modAmpSlider.value = eachInstrument.modAmp;
+            console.log('its happening');
+        }
+        //attackSlider.value = eachInstrument.attack;
+    }
+
+    function putSquareVals(squareVals) {
+        $.post('/squares', squareVals);
+    }
+
+    function putInstrumentVals(instrumentVals) {
+        $.post('/instruments', instrumentVals);
+    }
+/*
+    socket.on('message', addMessage)
+
+    function addMessage(message){
+        $("#messages").append(`<h4> ${message.name} </h4> <p> ${message.message} </p>`)
+    }
+
+    function getMessages() {
+        $.get('http://localhost:3000/messages', (data) =>{
+            data.forEach(addMessage);
+        })
+    }
+
+    function postMessage(message) {
+        $.post('http://localhost:3000/messages', message)
+    }
+*/
+</script>
