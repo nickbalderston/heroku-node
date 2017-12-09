@@ -1,0 +1,151 @@
+body{
+    margin: 0;
+    padding: 0;
+    background-color: rgb(30,30,30);
+}
+
+h1{
+    font-family: 'Comfortaa', cursive;
+    color: rgb(225,225,225);
+    margin-top: 0;
+}
+
+h2{
+    font-family: 'Comfortaa', cursive;
+    color: rgb(225,225,225);
+    margin-top: 0;
+}
+
+h5{
+    font-family: 'Comfortaa', cursive;
+    color: rgb(225,225,225);
+    margin-top: 0;
+    margin-left: 5%;
+}
+
+p{
+    font-family: 'Comfortaa', cursive;
+    color: WHITE;
+    margin-top: 7%;
+    margin-bottom: 2%;
+    margin-left: 2%;
+}
+
+input{
+    margin-left: 5%;
+    width: 90%;
+}
+
+#header{
+    width: 100vw;
+    height: 10vh;
+    abackground-color: BLACK;
+}
+
+#globalMenu{
+    float: left;
+    width: 25vw;
+    height: 100vh;
+    abackground-color: rgb(200,200,200);
+}
+
+#speedSlider{
+    direction: rtl;
+}
+
+#grid{
+    float: left;
+    width: 50vw;
+    height: 100vh;
+    abackground-color: BLACK;
+}
+
+#instrumentMenu{
+    float: left;
+    width: 25vw;
+    height: 100vh;
+    abackground-color: BLACK;
+    padding: 0;
+    margin: 0;
+}
+
+#instsHeader{
+    width: 100%;
+    abackground-color: BLACK;
+    margin:0;
+    padding: 0;
+}
+
+.instBtns{
+    float: left;
+    width: 25%;
+    height: 5vh;
+}
+
+#instBtn1{
+    background-color: rgb(178,54,98);
+    cursor: pointer;
+}
+
+#instBtn2{
+    background-color: rgb(54,168,127);
+    cursor: pointer;
+}
+
+#instBtn3{
+    background-color: rgb(206,124,41);
+    cursor: pointer;
+}
+
+#instBtn4{
+    background-color: rgb(134,63,196);
+    cursor: pointer;
+}
+
+#instrumentMenu img{
+    float: left;
+    width: 10%;
+    margin-right: 5%;
+    margin-left: 5%;
+}
+
+#instrumentMenuDiv{
+    background-color: rgb(178,54,98);
+    display: block;
+}
+
+.allSquares{
+    float: left;
+    border-style: solid;
+    width: 5.7%;
+    height: 5%;
+    border-width: 0px;
+    border-radius: 15%;
+    margin-left: 2px;
+    margin-bottom: 2px;
+    cursor: pointer;
+}
+
+.innerSquare1{
+    width: 100%;
+    height: 0;
+    background-color: rgb(178,54,98);
+}
+
+.innerSquare2{
+    width: 100%;
+    height: 0;
+    background-color: rgb(54,168,127);
+}
+
+.innerSquare3{
+    width: 100%;
+    height: 0;
+    background-color: rgb(206,124,41);
+}
+
+.innerSquare4{
+    width: 100%;
+    height: 0;
+    background-color: rgb(134,63,196);
+}

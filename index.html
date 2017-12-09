@@ -1,0 +1,584 @@
+<!doctype html>
+
+<link rel="stylesheet" href="style2.css">
+<script src="https://code.jquery.com/jquery-3.2.1.min.js"  crossorigin="anonymous"></script>
+<script src="/socket.io/socket.io.js"></script>
+
+<link href="https://fonts.googleapis.com/css?family=Comfortaa" rel="stylesheet">
+
+<div class="container" id="container">
+    <div id="header">
+        <h1>FOUReANDa</h1>
+    </div>
+    <div id = "grid">
+        
+    </div>
+
+    <div id = "instrumentMenu">
+        <div id="instsHeader">
+            <h2>Instruments:</h2>
+        </div>
+        <div id="instBtn1" class="instBtns"></div>
+        <div id="instBtn2" class="instBtns"></div>
+        <div id="instBtn3" class="instBtns"></div>
+        <div id="instBtn4" class="instBtns"></div>
+        <div id="instrumentMenuDiv">
+            <p>Wave Shape:</p>
+            <img id="sineBtn" src="images/sinewave.png">
+            <img id="pulseBtn" src="images/pulsewave.png">
+            <img id="sawBtn" src="images/sawwave.png">
+            <br>
+
+            <p>Attack:</p>
+            <input id="attackSlider" type="range" min="0" max="100"/>
+            <p>Decay:</p>
+            <input id="decaySlider" type="range" min="0" max="100"/>
+            <p>Sustain:</p>
+            <input id="sustainSlider" type="range" min="0" max="100"/>
+            <p>Release:</p>
+            <input id="releaseSlider" type="range" min="0" max="100"/>
+            <p>Modulation Frequency:</p>
+            <input id="modFreqSlider" type="range"/>
+            <p>Modulation Amplitude:</p>
+            <input id="modAmpSlider" type="range"/>
+        </div>
+    </div>  
+    
+    <div id="globalMenu">
+        <div id="instHeader">
+            <h2>Global Options:</h2>
+        </div>
+
+        <div id="globalMenuDiv">
+            <p>Speed:</p>
+            <input id="speedSlider" type="range" min="100" max="1000"/>
+            <p>Tonic Pitch:</p>
+            <h5>C | C#| D | Eb| E | F | F#| G | Ab| A | Bb| B</h5>
+            <input id="tonicSlider" type="range" min="0" max="11" list="steplist"/>
+            <datalist id="steplist">
+                <option label="C">0</option>
+                <option>1</option>
+                <option>2</option>
+                <option>3</option>
+                <option>4</option>
+            </datalist>
+            <p>Octave:</p>
+            <input id="octaveSlider" type="range" min="1" max="7" step="1"/>
+            <p id="majorBtn">Major</p>
+            <p>|</p>
+            <p id="minorBtn">Minor</p>
+        </div>
+    </div>  
+</div>
+<script>
+    var socket = io()
+    var instBtn1, instBtn2, instBtn3, instBtn4;
+
+    var selectedInst = 0;
+    var instColor1 = "rgb(178,54,98)"
+    var instColor2 = "rgb(54,168,127)"
+    var instColor3 = "rgb(206,124,41)"
+    var instColor4 = "rgb(134,63,196)"
+
+    var squaresArray = [];
+    var instrumentsArray = [];
+    var globalsArray = [];
+
+    var container = document.getElementById("container");
+    var grid = document.getElementById("grid");
+
+    var instrumentMenuDiv = document.getElementById("instrumentMenuDiv");
+    
+    instBtn1 = document.getElementById("instBtn1");
+    instBtn2 = document.getElementById("instBtn2");
+    instBtn3 = document.getElementById("instBtn3");
+    instBtn4 = document.getElementById("instBtn4");
+
+    var sineBtn = document.getElementById("sineBtn");
+    var pulseBtn = document.getElementById("pulseBtn");
+    var sawBtn = document.getElementById("sawBtn");
+    var attackSlider = document.getElementById("attackSlider");
+    var decaySlider = document.getElementById("decaySlider");
+    var sustainSlider = document.getElementById("sustainSlider");
+    var releaseSlider = document.getElementById("releaseSlider");
+    var modFreqSlider = document.getElementById("modFreqSlider");
+    var modAmpSlider = document.getElementById("modAmpSlider");
+
+    var speedSlider = document.getElementById("speedSlider");
+    var tonicSlider = document.getElementById("tonicSlider");
+    var octaveSlider = document.getElementById("octaveSlider");
+    var majorBtn = document.getElementById("majorBtn");
+    var minorBtn = document.getElementById("minorBtn");
+
+    var inst1WaveType, inst2WaveType, inst3WaveType, inst4WaveType;
+    var inst1Attack, inst2Attack, inst3Attack, inst4Attack;
+    var inst1Decay, inst2Decay, inst3Decay, inst4Decay;
+    var inst1Release, inst2Release, inst3Release, inst4Release;
+    var inst1ModFreq, inst2ModFreq, inst3ModFreq, inst4ModFreq;
+    var inst1ModAmp, inst2ModAmp, inst3ModAmp, inst4ModAmp;
+
+    var currentBeat;
+
+    var notes = [];
+
+    var majorMinor;
+
+    var octaveMultiplier = 1;
+
+    var envPercents = [[0,0,0,0], [0,0,0,0], [0,0,0,0], [0,0,0,0]];
+
+    var audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    //var testOsc = audioCtx.createOscillator();
+    //testOsc.connect(audioCtx.destination);
+    //testOsc.start();
+   
+
+    $(() => {
+
+        for(i=0; i < 240; i++){
+            var eachSquare = document.createElement("div");
+            eachSquare.className = "allSquares"
+            eachSquare.setAttribute('index', i);
+
+            var innerSquare1 = document.createElement("div");
+            innerSquare1.className = "innerSquare1";
+            var innerSquare2 = document.createElement("div");
+            innerSquare2.className = "innerSquare2";
+            var innerSquare3 = document.createElement("div");
+            innerSquare3.className = "innerSquare3";
+            var innerSquare4 = document.createElement("div");
+            innerSquare4.className = "innerSquare4";
+
+            eachSquare.appendChild(innerSquare1);
+            eachSquare.appendChild(innerSquare2);
+            eachSquare.appendChild(innerSquare3);
+            eachSquare.appendChild(innerSquare4);
+
+            squaresArray.push(eachSquare); 
+            grid.appendChild(eachSquare);
+
+
+//EVENT LISTENERS
+            eachSquare.onclick = function(){
+                var numInstsVar = this.getAttribute('numInsts').valueOf();
+                switch(selectedInst){
+                    case 0:
+                        if(this.getAttribute('inst1OnOff') === 'off'){
+                            this.setAttribute('inst1OnOff', 'on');
+                            numInstsVar++;
+                        } else{
+                            this.setAttribute('inst1OnOff', 'off');
+                            numInstsVar--;
+                        }
+                        break;
+                    case 1:
+                        if(this.getAttribute('inst2OnOff') === 'off'){
+                            this.setAttribute('inst2OnOff', 'on');
+                            numInstsVar++;
+                        } else{
+                            this.setAttribute('inst2OnOff', 'off');
+                            numInstsVar--;
+                        }
+                        break;
+                    case 2:
+                        if(this.getAttribute('inst3OnOff') === 'off'){
+                            this.setAttribute('inst3OnOff', 'on');
+                            numInstsVar++;
+                        } else{
+                            this.setAttribute('inst3OnOff', 'off');
+                            numInstsVar--;
+                        }
+                        break;
+                    case 3:
+                        if(this.getAttribute('inst4OnOff') === 'off'){
+                            this.setAttribute('inst4OnOff', 'on');
+                            numInstsVar++;
+                        } else{
+                            this.setAttribute('inst4OnOff', 'off');
+                            numInstsVar--;
+                        }
+                        break;
+                }
+
+                this.setAttribute('numInsts', numInstsVar);
+
+                var squareVals = { index: this.getAttribute('index').valueOf(), inst1OnOff: this.getAttribute('inst1OnOff'), 
+                    inst2OnOff: this.getAttribute('inst2OnOff'), inst3OnOff: this.getAttribute('inst3OnOff'), 
+                    inst4OnOff: this.getAttribute('inst4OnOff'), numInsts: this.getAttribute('numInsts'), note: this.getAttribute('note')};
+
+                putSquareVals(squareVals, this.getAttribute('index')); 
+            }
+        }
+
+        instBtn1.onclick = function(){
+            selectedInst = 0;
+            instrumentMenuDiv.style.backgroundColor = instColor1;
+            
+            attackSlider.value = instrumentsArray[selectedInst].attack;
+            decaySlider.value = instrumentsArray[selectedInst].decay;
+            sustainSlider.value = instrumentsArray[selectedInst].sustain;
+            releaseSlider.value = instrumentsArray[selectedInst].release;
+            modFreqSlider.value = instrumentsArray[selectedInst].modFreq;
+            modAmpSlider.value = instrumentsArray[selectedInst].modAmp;
+        }
+
+        instBtn2.onclick = function(){
+            selectedInst = 1;
+            instrumentMenuDiv.style.backgroundColor = instColor2;
+            
+            attackSlider.value = instrumentsArray[selectedInst].attack;
+            decaySlider.value = instrumentsArray[selectedInst].decay;
+            sustainSlider.value = instrumentsArray[selectedInst].sustain;
+            releaseSlider.value = instrumentsArray[selectedInst].release;
+            modFreqSlider.value = instrumentsArray[selectedInst].modFreq;
+            modAmpSlider.value = instrumentsArray[selectedInst].modAmp;
+        }
+
+        instBtn3.onclick = function(){
+            selectedInst = 2;
+            instrumentMenuDiv.style.backgroundColor = instColor3;
+            
+            attackSlider.value = instrumentsArray[selectedInst].attack;
+            decaySlider.value = instrumentsArray[selectedInst].decay;
+            sustainSlider.value = instrumentsArray[selectedInst].sustain;
+            releaseSlider.value = instrumentsArray[selectedInst].release;
+            modFreqSlider.value = instrumentsArray[selectedInst].modFreq;
+            modAmpSlider.value = instrumentsArray[selectedInst].modAmp;
+        }
+
+        instBtn4.onclick = function(){
+            selectedInst = 3;
+            instrumentMenuDiv.style.backgroundColor = instColor4;
+            
+            attackSlider.value = instrumentsArray[selectedInst].attack;
+            decaySlider.value = instrumentsArray[selectedInst].decay;
+            sustainSlider.value = instrumentsArray[selectedInst].sustain;
+            releaseSlider.value = instrumentsArray[selectedInst].release;
+            modFreqSlider.value = instrumentsArray[selectedInst].modFreq;
+            modAmpSlider.value = instrumentsArray[selectedInst].modAmp;
+        }
+
+        for(i = 0; i < 4; i++){
+            instrumentsArray.push({instIndex: i}); 
+        }
+
+
+        sineBtn.onclick = function(){
+            var instrumentVals = {instIndex: selectedInst, waveType: 'sine', attack: instrumentsArray[selectedInst].attack, decay: instrumentsArray[selectedInst].decay, 
+                sustain: instrumentsArray[selectedInst].sustain, release: instrumentsArray[selectedInst].release, modFreq: instrumentsArray[selectedInst].modFreq, modAmp: instrumentsArray[selectedInst].modAmp};
+            putInstrumentVals(instrumentVals);
+        }
+        pulseBtn.onclick = function(){
+            var instrumentVals = {instIndex: selectedInst, waveType: 'square', attack: instrumentsArray[selectedInst].attack, decay: instrumentsArray[selectedInst].decay, 
+                sustain: instrumentsArray[selectedInst].sustain, release: instrumentsArray[selectedInst].release, modFreq: instrumentsArray[selectedInst].modFreq, modAmp: instrumentsArray[selectedInst].modAmp};
+            putInstrumentVals(instrumentVals);
+        }
+        sawBtn.onclick = function(){
+            var instrumentVals = {instIndex: selectedInst, waveType: 'sawtooth', attack: instrumentsArray[selectedInst].attack, decay: instrumentsArray[selectedInst].decay, 
+                sustain: instrumentsArray[selectedInst].sustain, release: instrumentsArray[selectedInst].release, modFreq: instrumentsArray[selectedInst].modFreq, modAmp: instrumentsArray[selectedInst].modAmp};
+            putInstrumentVals(instrumentVals);
+        }
+        attackSlider.oninput = function(){
+            var instrumentVals = {instIndex: selectedInst, waveType: instrumentsArray[selectedInst].waveType, attack: attackSlider.value, decay: instrumentsArray[selectedInst].decay, 
+                sustain: instrumentsArray[selectedInst].sustain, release: instrumentsArray[selectedInst].release, modFreq: instrumentsArray[selectedInst].modFreq, modAmp: instrumentsArray[selectedInst].modAmp};
+            putInstrumentVals(instrumentVals);
+        }
+        decaySlider.oninput = function(){
+            var instrumentVals = {instIndex: selectedInst, waveType: instrumentsArray[selectedInst].waveType, attack: instrumentsArray[selectedInst].attack, decay: decaySlider.value, 
+                sustain: instrumentsArray[selectedInst].sustain, release: instrumentsArray[selectedInst].release, modFreq: instrumentsArray[selectedInst].modFreq, modAmp: instrumentsArray[selectedInst].modAmp};
+            putInstrumentVals(instrumentVals);
+        }
+        sustainSlider.oninput = function(){
+            var instrumentVals = {instIndex: selectedInst, waveType: instrumentsArray[selectedInst].waveType, attack: instrumentsArray[selectedInst].attack, decay: instrumentsArray[selectedInst].decay, 
+                sustain: sustainSlider.value, release: instrumentsArray[selectedInst].release, modFreq: instrumentsArray[selectedInst].modFreq, modAmp: instrumentsArray[selectedInst].modAmp};
+            putInstrumentVals(instrumentVals);
+        }
+        releaseSlider.oninput = function(){
+            var instrumentVals = {instIndex: selectedInst, waveType: instrumentsArray[selectedInst].waveType, attack: instrumentsArray[selectedInst].attack, decay: instrumentsArray[selectedInst].decay, 
+                sustain: instrumentsArray[selectedInst].sustain, release: releaseSlider.value, modFreq: instrumentsArray[selectedInst].modFreq, modAmp: instrumentsArray[selectedInst].modAmp};
+            putInstrumentVals(instrumentVals);
+        }
+        modFreqSlider.oninput = function(){
+            var instrumentVals = {instIndex: selectedInst, waveType: instrumentsArray[selectedInst].waveType, attack: instrumentsArray[selectedInst].attack, decay: instrumentsArray[selectedInst].decay, 
+                sustain: instrumentsArray[selectedInst].sustain, release: instrumentsArray[selectedInst].release, modFreq: modFreqSlider.value, modAmp: instrumentsArray[selectedInst].modAmp};
+            putInstrumentVals(instrumentVals);
+        }
+        modAmpSlider.oninput = function(){
+            var instrumentVals = {instIndex: selectedInst, waveType: instrumentsArray[selectedInst].waveType, attack: instrumentsArray[selectedInst].attack, decay: instrumentsArray[selectedInst].decay, 
+                sustain: instrumentsArray[selectedInst].sustain, release: instrumentsArray[selectedInst].release, modFreq: instrumentsArray[selectedInst].modFreq, modAmp: modAmpSlider.value};
+            putInstrumentVals(instrumentVals);
+        }
+         
+        speedSlider.oninput = function(){
+            var globalVals = {beat: currentBeat, speed: speedSlider.value, tonic: tonicSlider.value, octave: octaveSlider.value, scale: majorMinor};
+            putGlobalVals(globalVals);
+        }
+
+        tonicSlider.oninput = function(){
+            var globalVals = {beat: currentBeat, speed: speedSlider.value, tonic: tonicSlider.value, octave: octaveSlider.value, scale: majorMinor};
+            putGlobalVals(globalVals);
+        }
+
+        octaveSlider.oninput = function(){
+            var globalVals = {beat: currentBeat, speed: speedSlider.value, tonic: tonicSlider.value, octave: octaveSlider.value, scale: majorMinor};
+            putGlobalVals(globalVals);
+        }
+
+        majorBtn.onclick = function(){
+            majorMinor = 'major';
+            var globalVals = {beat: currentBeat, speed: speedSlider.value, tonic: tonicSlider.value, octave: octaveSlider.value, scale: majorMinor};
+            putGlobalVals(globalVals);
+        }
+
+        minorBtn.onclick = function(){
+            majorMinor = 'minor';
+            var globalVals = {beat: currentBeat, speed: speedSlider.value, tonic: tonicSlider.value, octave: octaveSlider.value, scale: majorMinor};
+            putGlobalVals(globalVals);
+        }
+
+        getSquareVals();
+        getInstrumentVals();
+        getGlobalVals();
+    })
+
+    socket.on('square', updateSquares);
+    socket.on('instrument', updateInstruments);
+    socket.on('global', updateGlobals);
+    socket.on('newBeat', function(beatIndex){
+        currentBeat = beatIndex;
+        //console.log(currentBeat);
+
+        for(i = currentBeat; i < currentBeat + 240; i = i+16){
+            if(i != 0){
+                squaresArray[i-1].style.opacity = "1";
+            }
+            if(i == 0){
+                squaresArray[squaresArray.length-1].style.opacity = "1";
+            }
+
+            squaresArray[i].style.opacity = "0.8";
+            
+            if(squaresArray[i].getAttribute('inst1OnOff') == "on"){
+                var aTime = (speedSlider.value*envPercents[0][0])/1000;
+                var dTime = (speedSlider.value*envPercents[0][1])/1000;
+                var sTime = (speedSlider.value*envPercents[0][2])/1000;
+                var rTime = (speedSlider.value*envPercents[0][3])/1000;
+                makeOsc(squaresArray[i].getAttribute('note')*octaveMultiplier, instrumentsArray[0].waveType, aTime, dTime, sTime, rTime);
+
+            }
+
+            if(squaresArray[i].getAttribute('inst2OnOff') == "on"){
+                var aTime = (speedSlider.value*envPercents[1][0])/1000;
+                var dTime = (speedSlider.value*envPercents[1][1])/1000;
+                var sTime = (speedSlider.value*envPercents[1][2])/1000;
+                var rTime = (speedSlider.value*envPercents[1][3])/1000;
+                makeOsc(squaresArray[i].getAttribute('note')*octaveMultiplier, instrumentsArray[1].waveType, aTime, dTime, sTime, rTime);
+            }
+
+            if(squaresArray[i].getAttribute('inst3OnOff') == "on"){
+                var aTime = (speedSlider.value*envPercents[2][0])/1000;
+                var dTime = (speedSlider.value*envPercents[2][1])/1000;
+                var sTime = (speedSlider.value*envPercents[2][2])/1000;
+                var rTime = (speedSlider.value*envPercents[2][3])/1000;
+                makeOsc(squaresArray[i].getAttribute('note')*octaveMultiplier, instrumentsArray[2].waveType, aTime, dTime, sTime, rTime);
+            }
+
+            if(squaresArray[i].getAttribute('inst4OnOff') == "on"){
+                var aTime = (speedSlider.value*envPercents[3][0])/1000;
+                var dTime = (speedSlider.value*envPercents[3][1])/1000;
+                var sTime = (speedSlider.value*envPercents[3][2])/1000;
+                var rTime = (speedSlider.value*envPercents[3][3])/1000;
+                makeOsc(squaresArray[i].getAttribute('note')*octaveMultiplier, instrumentsArray[3].waveType, aTime, dTime, sTime, rTime);
+            }
+
+        }
+    });
+
+    socket.on('changeScale', function(chosenNotes){
+        //console.log(chosenNotes);
+        for(i = 0; i < 240; i++){
+            console.log(chosenNotes[i]);
+            squaresArray[i].setAttribute('note', chosenNotes[i]);
+        }
+        //console.log('changeScale');
+    })
+
+    function getSquareVals() {
+        //get the data (from /squares) for each entry in /squares...trigger the updateSquare function
+        $.get('/squares', (data) =>{
+            data.forEach(updateSquares);
+        })
+    }
+
+    function getInstrumentVals() {
+        //get the data (from /instruments) for each entry in /instruments...trigger the updateInstrument function
+        $.get('/instruments', (data) =>{
+            data.forEach(updateInstruments);
+        })
+    }
+
+    function getGlobalVals() {
+        //get the data (from /instruments) for each entry in /instruments...trigger the updateInstrument function
+        $.get('/globals', (data) =>{
+            data.forEach(updateGlobals);
+        })
+    }
+
+    function updateSquares(eachSquare){
+        var index = eachSquare.index;
+        var innerSquare1 = squaresArray[index].getElementsByClassName("innerSquare1")[0];
+        var innerSquare2 = squaresArray[index].getElementsByClassName("innerSquare2")[0];
+        var innerSquare3 = squaresArray[index].getElementsByClassName("innerSquare3")[0];
+        var innerSquare4 = squaresArray[index].getElementsByClassName("innerSquare4")[0];
+
+        squaresArray[index].setAttribute('inst1OnOff', eachSquare.inst1OnOff);
+        squaresArray[index].setAttribute('inst2OnOff', eachSquare.inst2OnOff);
+        squaresArray[index].setAttribute('inst3OnOff', eachSquare.inst3OnOff);
+        squaresArray[index].setAttribute('inst4OnOff', eachSquare.inst4OnOff);
+        squaresArray[index].setAttribute('numInsts', eachSquare.numInsts);
+        squaresArray[index].setAttribute('note', eachSquare.note);
+
+        if(eachSquare.numInsts > 0){
+            if(eachSquare.inst1OnOff === 'on'){
+                innerSquare1.style.height = 100/eachSquare.numInsts +"%";
+            }else{
+                innerSquare1.style.height = 0;
+            }
+            if(eachSquare.inst2OnOff === 'on'){
+                innerSquare2.style.height = 100/eachSquare.numInsts +"%";
+            }else{
+                innerSquare2.style.height = 0;
+            }
+            if(eachSquare.inst3OnOff === 'on'){
+                innerSquare3.style.height = 100/eachSquare.numInsts +"%";
+            }else{
+                innerSquare3.style.height = 0;
+            }
+            if(eachSquare.inst4OnOff === 'on'){
+                innerSquare4.style.height = 100/eachSquare.numInsts +"%";
+            }else{
+                innerSquare4.style.height = 0;
+            } 
+        }else{
+            squaresArray[index].style.backgroundColor = 'rgb(225,225,225)';
+            innerSquare1.style.height = 0;
+            innerSquare2.style.height = 0;
+            innerSquare3.style.height = 0;
+            innerSquare4.style.height = 0;
+        }
+    }
+
+    function updateInstruments(eachInstrument){
+        //update the values of the sliders here
+        var instIndex = eachInstrument.instIndex;
+        instrumentsArray[instIndex].waveType = eachInstrument.waveType;
+        instrumentsArray[instIndex].attack = eachInstrument.attack;
+        instrumentsArray[instIndex].decay = eachInstrument.decay;
+        instrumentsArray[instIndex].sustain = eachInstrument.sustain;
+        instrumentsArray[instIndex].release = eachInstrument.release;
+        instrumentsArray[instIndex].modFreq = eachInstrument.modFreq;
+        instrumentsArray[instIndex].modAmp = eachInstrument.modAmp;
+
+        if(selectedInst == instIndex){
+            attackSlider.value = eachInstrument.attack;
+            decaySlider.value = eachInstrument.decay;
+            sustainSlider.value = eachInstrument.sustain;
+            releaseSlider.value = eachInstrument.release;
+            modFreqSlider.value = eachInstrument.modFreq;
+            modAmpSlider.value = eachInstrument.modAmp;
+        }
+
+        var a = parseInt(eachInstrument.attack);
+        var d = parseInt(eachInstrument.decay);
+        var s = parseInt(eachInstrument.sustain);
+        var r = parseInt(eachInstrument.release);
+        var total = 0;
+        total = a+d+s+r;
+
+        if(total > 0){
+            envPercents[instIndex][0] = a/total;
+            //console.log('a/total: '+a/total);
+            envPercents[instIndex][1] = d/total;
+            //console.log('d/total: '+d/total);
+            envPercents[instIndex][2] = s/total;
+            //console.log('s/total: '+s/total);
+            envPercents[instIndex][3] = r/total;
+            //console.log('r/total: '+r/total);
+        }else{
+            envPercents[instIndex] = [0,0,0,0];
+        }
+    }
+
+    function updateGlobals(eachGlobal){
+        speedSlider.value = eachGlobal.speed;
+        tonicSlider.value = eachGlobal.tonic;
+        octaveSlider.value = eachGlobal.octave;
+        if(majorMinor != eachGlobal.scale){
+
+        }
+
+        
+
+        if(majorMinor == 'major'){
+            majorBtn.style.color = "WHITE";
+            minorBtn.style.color = "rgb(225,225,225";
+        }else{
+            minorBtn.style.color = "WHITE";
+            majorBtn.style.color = "rgb(225,225,225";
+        }
+        
+        if(octaveSlider.value == 1){
+            octaveMultiplier = 1;
+        } else if(octaveSlider.value == 2){
+            octaveMultiplier = 2;
+        } else if (octaveSlider.value == 3){
+            octaveMultiplier = 4;
+        } else if (octaveSlider.value == 4){
+            octaveMultiplier = 8;
+        } else if(octaveSlider.value == 5){
+            octaveMultiplier = 16;
+        } else if (octaveSlider.value == 6){
+            octaveMultiplier = 32;
+        } else if (octaveSlider.value == 7){
+            octaveMultiplier = 64;
+        }
+    }
+
+    function putSquareVals(squareVals) {
+        $.post('/squares', squareVals);
+    }
+
+    function putInstrumentVals(instrumentVals) {
+        $.post('/instruments', instrumentVals);
+    }
+
+    function putGlobalVals(globalVals) {
+        $.post('/globals', globalVals);
+    }
+
+    function makeOsc(pitch, waveType, aTime, dTime, sTime, rTime){
+
+        var oscNode = audioCtx.createOscillator();
+        oscNode.frequency.value = pitch;
+        oscNode.type = waveType;
+        var gainNode = audioCtx.createGain();
+        gainNode.connect(audioCtx.destination);
+        oscNode.connect(gainNode);
+        gainNode.gain.value = 0.001;
+        oscNode.start();
+        var currentTime = audioCtx.currentTime;
+        gainNode.gain.linearRampToValueAtTime(1.0, currentTime + aTime);
+        gainNode.gain.linearRampToValueAtTime(0.7, currentTime + aTime + dTime);
+        gainNode.gain.linearRampToValueAtTime(0.7, currentTime + aTime + dTime + sTime);
+        gainNode.gain.linearRampToValueAtTime(0, currentTime + aTime + dTime + sTime + rTime);
+        setTimeout(function(){
+            oscNode.disconnect();
+            gainNode.disconnect();
+        },(aTime + dTime + sTime + rTime)*1000);   
+    }
+
+    function updateScale(){
+
+    }
+
+</script>
